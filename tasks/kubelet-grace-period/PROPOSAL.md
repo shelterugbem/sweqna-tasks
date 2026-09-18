@@ -12,9 +12,7 @@ most expensive mistake available to you.
 
 - **URL:**
  https://github.com/kubernetes/kubernetes
-- **Full commit SHA:** pinned when you start authoring, not at proposal. Full 40
-  characters; everything you cite must resolve at this revision.
-  Full commit SHA: e2a4a8777f423a096937a8d1c5d30469232ffe7e
+- **Full commit SHA:**  e2a4a8777f423a096937a8d1c5d30469232ffe7e
 - **Licence:**
  Apache-2.0
 - **Primary language(s):**
