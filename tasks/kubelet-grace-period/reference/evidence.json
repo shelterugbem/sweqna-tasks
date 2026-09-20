@@ -12,9 +12,9 @@
       },
       "verification": "Inspected the pinned Kubernetes source at the cited path and line range; the cited statements were verified directly in the source.",
       "result": {
-        "observed": "terminatingAt is set when zero, startedTerminating is set true, and the last pod update is requeued.",
-        "interpretation": "The termination start time is recorded once and is not reset by later kill requests.",
-        "log": null
+        "log": "reference/source-analysis.log",
+        "observed": "terminatingAt is set once and startedTerminating becomes true.",
+        "interpretation": "Termination start time is recorded once."
       }
     },
     {
@@ -28,9 +28,9 @@
       },
       "verification": "Inspected the pinned Kubernetes source at the cited path and line range; the cited statements were verified directly in the source.",
       "result": {
-        "observed": "The function replaces the current grace period when the supplied override is smaller and returns true when the stored value changes.",
-        "interpretation": "A 10-second request can shorten an existing 60-second grace period to 10 seconds.",
-        "log": null
+        "log": "reference/source-analysis.log",
+        "observed": "A smaller override replaces the current grace period.",
+        "interpretation": "10 seconds can replace 60 seconds."
       }
     },
     {
@@ -44,9 +44,9 @@
       },
       "verification": "Inspected the pinned Kubernetes source at the cited path and line range; the cited statements were verified directly in the source.",
       "result": {
-        "observed": "UpdatePod stores the effective grace period, sets the KillPodOptions override, detects that the grace period was shortened, and calls status.cancelFn().",
-        "interpretation": "The new 10-second termination update causes the current pod sync to be cancelled/reprocessed.",
-        "log": null
+        "log": "reference/source-analysis.log",
+        "observed": "UpdatePod stores the new value and calls cancelFn.",
+        "interpretation": "The shortened update triggers cancellation and reprocessing."
       }
     },
     {
@@ -60,9 +60,9 @@
       },
       "verification": "Inspected the pinned Kubernetes source at the cited path and line range; the cited statements were verified directly in the source.",
       "result": {
-        "observed": "The incoming context is replaced with klog.NewContext(context.TODO(), logger). The source contains TODO #113606 concerning connecting the incoming context.",
-        "interpretation": "The pod-worker cancellation does not propagate through this replacement context to the currently running termination operation.",
-        "log": null
+        "log": "reference/source-analysis.log",
+        "observed": "SyncTerminatingPod replaces the worker context with context.TODO().",
+        "interpretation": "Worker cancellation does not propagate to the running operation."
       }
     },
     {
@@ -76,9 +76,9 @@
       },
       "verification": "Inspected the pinned Kubernetes source at the cited path and line range; the cited statements were verified directly in the source.",
       "result": {
-        "observed": "killPod calls containerRuntime.KillPod(ctx, pod, p, gracePeriodOverride).",
-        "interpretation": "The effective grace-period override reaches the runtime termination path.",
-        "log": null
+        "log": "reference/source-analysis.log",
+        "observed": "killPod passes the override to the runtime.",
+        "interpretation": "The shortened value reaches the runtime."
       }
     },
     {
@@ -92,9 +92,9 @@
       },
       "verification": "Inspected the pinned Kubernetes source at the cited path and line range; the cited statements were verified directly in the source.",
       "result": {
-        "observed": "killContainer assigns the override to gracePeriod and calls runtimeService.StopContainer with that value.",
-        "interpretation": "A subsequent termination operation receives the shortened 10-second override; the code does not subtract elapsed time from terminatingAt.",
-        "log": null
+        "log": "reference/source-analysis.log",
+        "observed": "killContainer passes the resulting value to StopContainer.",
+        "interpretation": "The runtime receives the shortened value; no elapsed-time subtraction occurs here."
       }
     }
   ]

@@ -4,7 +4,7 @@
     "rights_basis": "open-source",
     "repository": "https://github.com/kubernetes/kubernetes",
     "license": "Apache-2.0",
-    "ai_training_authorization": "",
+    "ai_training_authorization": "The Kubernetes source is distributed under Apache License 2.0. Its license terms permit reproduction and derivative works subject to the stated conditions, providing the rights basis for including the copied source in this task and using it for AI-training purposes subject to those terms.",
     "owner": null,
     "permission_record": null
   },

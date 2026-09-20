@@ -62,3 +62,6 @@ an ambiguous pass_condition is fine; deleting a criterion the agent met is not.
 Independent solve time:
 
 ## Known limitations
+
+## Rubric count note
+The rubric uses 6 criteria because the task has six distinct answer requirements: effective grace-period change, pod-worker state update, behavior of the in-progress operation, runtime propagation, elapsed-time handling, and the complete control-flow explanation. These criteria cover the required distinctions without splitting individual source facts into redundant criteria.

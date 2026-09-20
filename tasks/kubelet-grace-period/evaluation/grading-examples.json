@@ -8,12 +8,36 @@
       "answer_source": "reference/answer.md",
       "answer_text": null,
       "criteria": [
-        {"id": "R01", "met": true, "note": "Correctly states that 60 seconds is shortened to 10 seconds."},
-        {"id": "R02", "met": true, "note": "Correctly traces status update and cancelFn."},
-        {"id": "R03", "met": true, "note": "Correctly explains context.TODO() and lack of cancellation propagation."},
-        {"id": "R04", "met": true, "note": "Correctly traces the override into the runtime."},
-        {"id": "R05", "met": true, "note": "Correctly explains terminatingAt and no elapsed-time subtraction."},
-        {"id": "R06", "met": true, "note": "Provides the complete control-flow explanation."}
+        {
+          "id": "R01",
+          "met": true,
+          "note": "Correctly states that 60 seconds is shortened to 10 seconds."
+        },
+        {
+          "id": "R02",
+          "met": true,
+          "note": "Correctly traces status update and cancelFn."
+        },
+        {
+          "id": "R03",
+          "met": true,
+          "note": "Correctly explains context.TODO() and lack of cancellation propagation."
+        },
+        {
+          "id": "R04",
+          "met": true,
+          "note": "Correctly traces the override into the runtime."
+        },
+        {
+          "id": "R05",
+          "met": true,
+          "note": "Correctly explains terminatingAt and no elapsed-time subtraction."
+        },
+        {
+          "id": "R06",
+          "met": true,
+          "note": "Provides the complete control-flow explanation."
+        }
       ],
       "explanation": "The reference answer satisfies all required criteria."
     },
@@ -24,12 +48,36 @@
       "answer_source": null,
       "answer_text": "The second request reduces the effective grace period from 60 seconds to 10 seconds. UpdatePod records the shorter value and cancels the current pod sync. However, SyncTerminatingPod currently replaces the worker context with context.TODO(), so that cancellation does not interrupt an already-running termination operation. The shortened value is passed into later runtime termination, and terminatingAt is not used to subtract already elapsed time.",
       "criteria": [
-        {"id": "R01", "met": true, "note": "Correctly identifies the 60-to-10 reduction."},
-        {"id": "R02", "met": true, "note": "Identifies the state update and cancellation."},
-        {"id": "R03", "met": true, "note": "Correctly explains the context behavior."},
-        {"id": "R04", "met": true, "note": "Correctly states that the shortened value reaches runtime termination."},
-        {"id": "R05", "met": true, "note": "Correctly explains the lack of elapsed-time subtraction."},
-        {"id": "R06", "met": true, "note": "Provides the essential end-to-end behavior."}
+        {
+          "id": "R01",
+          "met": true,
+          "note": "Correctly identifies the 60-to-10 reduction."
+        },
+        {
+          "id": "R02",
+          "met": true,
+          "note": "Identifies the state update and cancellation."
+        },
+        {
+          "id": "R03",
+          "met": true,
+          "note": "Correctly explains the context behavior."
+        },
+        {
+          "id": "R04",
+          "met": true,
+          "note": "Correctly states that the shortened value reaches runtime termination."
+        },
+        {
+          "id": "R05",
+          "met": true,
+          "note": "Correctly explains the lack of elapsed-time subtraction."
+        },
+        {
+          "id": "R06",
+          "met": true,
+          "note": "Provides the essential end-to-end behavior."
+        }
       ],
       "explanation": "This is a concise paraphrase that preserves the technically important behavior."
     },
@@ -40,12 +88,36 @@
       "answer_source": null,
       "answer_text": "The pod is already terminating with a 60-second grace period, so the new 10-second request is ignored. The original termination continues for the full 60 seconds and nothing changes in the pod worker.",
       "criteria": [
-        {"id": "R01", "met": false, "note": "Incorrectly claims the 10-second request is ignored."},
-        {"id": "R02", "met": false, "note": "Omits the state update and cancelFn branch."},
-        {"id": "R03", "met": false, "note": "Does not identify the actual context behavior."},
-        {"id": "R04", "met": false, "note": "Does not trace the shortened override."},
-        {"id": "R05", "met": false, "note": "Does not address terminatingAt."},
-        {"id": "R06", "met": false, "note": "Does not provide the required control-flow trace."}
+        {
+          "id": "R01",
+          "met": false,
+          "note": "Incorrectly claims the 10-second request is ignored."
+        },
+        {
+          "id": "R02",
+          "met": false,
+          "note": "Omits the state update and cancelFn branch."
+        },
+        {
+          "id": "R03",
+          "met": false,
+          "note": "Does not identify the actual context behavior."
+        },
+        {
+          "id": "R04",
+          "met": false,
+          "note": "Does not trace the shortened override."
+        },
+        {
+          "id": "R05",
+          "met": false,
+          "note": "Does not address terminatingAt."
+        },
+        {
+          "id": "R06",
+          "met": false,
+          "note": "Does not provide the required control-flow trace."
+        }
       ],
       "explanation": "The answer contradicts the source by saying the shorter request is ignored."
     },
@@ -56,14 +128,78 @@
       "answer_source": null,
       "answer_text": "The kubelet subtracts the time already spent terminating from the new 10-second request. For example, if 7 seconds have elapsed, only 3 seconds remain. The existing operation is immediately cancelled and restarted with those 3 seconds.",
       "criteria": [
-        {"id": "R01", "met": true, "note": "Recognizes that the new request is shorter, but the effective timing calculation is wrong."},
-        {"id": "R02", "met": true, "note": "Recognizes that shortening causes pod-worker cancellation."},
-        {"id": "R03", "met": false, "note": "Incorrectly claims the already-running operation is immediately cancelled."},
-        {"id": "R04", "met": false, "note": "Does not correctly trace the 10-second override into the runtime."},
-        {"id": "R05", "met": false, "note": "Incorrectly claims elapsed time is subtracted from the new grace period."},
-        {"id": "R06", "met": false, "note": "The control-flow explanation is materially incorrect."}
+        {
+          "id": "R01",
+          "met": true,
+          "note": "Recognizes that the new request is shorter, but the effective timing calculation is wrong."
+        },
+        {
+          "id": "R02",
+          "met": true,
+          "note": "Recognizes that shortening causes pod-worker cancellation."
+        },
+        {
+          "id": "R03",
+          "met": false,
+          "note": "Incorrectly claims the already-running operation is immediately cancelled."
+        },
+        {
+          "id": "R04",
+          "met": false,
+          "note": "Does not correctly trace the 10-second override into the runtime."
+        },
+        {
+          "id": "R05",
+          "met": false,
+          "note": "Incorrectly claims elapsed time is subtracted from the new grace period."
+        },
+        {
+          "id": "R06",
+          "met": false,
+          "note": "The control-flow explanation is materially incorrect."
+        }
       ],
       "explanation": "The answer contains some correct observations but makes a critical error about elapsed-time subtraction and cancellation propagation."
+    },
+    {
+      "id": "G05",
+      "label": "flawed_agent_cancellation_claim",
+      "expected_outcome": "fail",
+      "answer_source": null,
+      "answer_text": "The second 10-second kill request shortens the existing 60-second termination. UpdatePod changes status.gracePeriod from 60 to 10 and calls cancelFn because the grace period was shortened. The answer incorrectly claims that cancelFn directly cancels the already-running runtime termination operation. In the pinned source, SyncTerminatingPod replaces the incoming worker context with context.TODO(), so that cancellation does not propagate to the already-running runtime operation.",
+      "criteria": [
+        {
+          "id": "R01",
+          "met": true,
+          "note": "Correctly identifies the 60-to-10 reduction."
+        },
+        {
+          "id": "R02",
+          "met": true,
+          "note": "Correctly identifies the state update and cancelFn branch."
+        },
+        {
+          "id": "R03",
+          "met": false,
+          "note": "Incorrectly claims cancelFn interrupts the already-running runtime operation."
+        },
+        {
+          "id": "R04",
+          "met": true,
+          "note": "Correctly identifies the shortened value reaching later termination processing."
+        },
+        {
+          "id": "R05",
+          "met": true,
+          "note": "Correctly states that elapsed time is not subtracted from the new value."
+        },
+        {
+          "id": "R06",
+          "met": false,
+          "note": "Fails to distinguish pod-worker cancellation from cancellation of the already-running runtime operation."
+        }
+      ],
+      "explanation": "Real flawed agent answer supplied during calibration; its key error is treating pod-worker cancelFn as directly cancelling the already-running runtime termination."
     }
   ]
 }

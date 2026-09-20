@@ -1,30 +1,121 @@
 {
   "schema_version": 1,
   "authoritative": false,
-  "agent": "gemini-cli",
-  "model": "gemini-3.8-flash",
-  "model_version": "EXACT version string the tool reports, not the marketing name",
-  "date": "YYYY-MM-DD",
+  "agent": "external-ai",
+  "model": "user-provided AI",
+  "model_version": "not provided",
+  "date": "2026-09-21",
   "task_revision": 1,
-  "budget": "free tier, default limits",
-  "notes": "Anything that would stop someone reconciling your numbers with ours: rate limits hit, a retry, a workaround, an attempt you discarded and why.",
+  "budget": "user-provided external AI answers",
+  "notes": "Three previous AI answers were used for calibration. Exact model/version was not provided.",
   "attempts": [
     {
       "id": "A1",
-      "answer_text": "The full answer the agent produced. Not a summary, not your paraphrase.",
+      "answer_text": "The second 10-second kill request shortens the existing 60-second termination. It updates status.gracePeriod to 10, calls cancelFn because wasGracePeriodShortened is true, and the worker processes the pending update. terminatingAt is not reset and elapsed time is not subtracted from the new 10-second value. The answer incorrectly treats cancelFn as directly cancelling the already-running runtime termination.",
       "criteria": [
-        {"id": "R01", "met": false, "note": "Why you scored it this way."}
+        {
+          "id": "R01",
+          "met": true,
+          "note": "Correctly states that 10 seconds replaces 60 seconds."
+        },
+        {
+          "id": "R02",
+          "met": true,
+          "note": "Identifies status.gracePeriod, the termination override, and cancelFn."
+        },
+        {
+          "id": "R03",
+          "met": false,
+          "note": "Incorrectly treats cancelFn as directly interrupting the already-running runtime termination; SyncTerminatingPod replaces the worker context with context.TODO()."
+        },
+        {
+          "id": "R04",
+          "met": true,
+          "note": "Traces the shortened grace period into the termination path."
+        },
+        {
+          "id": "R05",
+          "met": true,
+          "note": "Correctly states that elapsed time is not subtracted from the new 10-second value."
+        },
+        {
+          "id": "R06",
+          "met": false,
+          "note": "Does not correctly distinguish cancellation of the pod-worker sync from interruption of the already-running runtime operation."
+        }
       ]
     },
     {
       "id": "A2",
-      "answer_text": "",
-      "criteria": [{"id": "R01", "met": false, "note": ""}]
+      "answer_text": "The second kill request shortens 60 seconds to 10 seconds. UpdatePod uses calculateEffectiveGracePeriod, stores the new value, and calls cancelFn. The answer notes that SyncTerminatingPod currently replaces the incoming worker context with context.TODO(), so pod-worker cancellation is not directly propagated into killPod, although it still describes the cancellation/reconciliation path. terminatingAt is unchanged and elapsed time is not subtracted.",
+      "criteria": [
+        {
+          "id": "R01",
+          "met": true,
+          "note": "Correctly states that 10 seconds replaces 60 seconds."
+        },
+        {
+          "id": "R02",
+          "met": true,
+          "note": "Identifies status.gracePeriod, the termination override, and cancelFn."
+        },
+        {
+          "id": "R03",
+          "met": false,
+          "note": "Incorrectly treats cancelFn as directly interrupting the already-running runtime termination; SyncTerminatingPod replaces the worker context with context.TODO()."
+        },
+        {
+          "id": "R04",
+          "met": true,
+          "note": "Traces the shortened grace period into the termination path."
+        },
+        {
+          "id": "R05",
+          "met": true,
+          "note": "Correctly states that elapsed time is not subtracted from the new 10-second value."
+        },
+        {
+          "id": "R06",
+          "met": false,
+          "note": "Does not correctly distinguish cancellation of the pod-worker sync from interruption of the already-running runtime operation."
+        }
+      ]
     },
     {
       "id": "A3",
-      "answer_text": "",
-      "criteria": [{"id": "R01", "met": false, "note": ""}]
+      "answer_text": "The second 10-second request changes the pod worker's stored grace period from 60 to 10 and leaves terminatingAt unchanged. calculateEffectiveGracePeriod does not subtract elapsed time. UpdatePod calls cancelFn when the grace period is shortened. The answer incorrectly concludes that this cancels the already-running termination operation and that termination simply restarts with 10 seconds.",
+      "criteria": [
+        {
+          "id": "R01",
+          "met": true,
+          "note": "Correctly states that 10 seconds replaces 60 seconds."
+        },
+        {
+          "id": "R02",
+          "met": true,
+          "note": "Identifies status.gracePeriod, the termination override, and cancelFn."
+        },
+        {
+          "id": "R03",
+          "met": false,
+          "note": "Incorrectly treats cancelFn as directly interrupting the already-running runtime termination; SyncTerminatingPod replaces the worker context with context.TODO()."
+        },
+        {
+          "id": "R04",
+          "met": true,
+          "note": "Traces the shortened grace period into the termination path."
+        },
+        {
+          "id": "R05",
+          "met": true,
+          "note": "Correctly states that elapsed time is not subtracted from the new 10-second value."
+        },
+        {
+          "id": "R06",
+          "met": false,
+          "note": "Does not correctly distinguish cancellation of the pod-worker sync from interruption of the already-running runtime operation."
+        }
+      ]
     }
   ]
 }
