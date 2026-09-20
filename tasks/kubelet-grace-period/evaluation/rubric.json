@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "criteria": [
+    {
+      "id": "R01",
+      "requirement": "Explain how the 10-second request changes the existing 60-second grace period.",
+      "claim": "The effective grace period is shortened from 60 seconds to 10 seconds.",
+      "pass_condition": "States that the smaller 10-second override is accepted.",
+      "acceptable_alternatives": [],
+      "fail_condition": "Claims the 10-second request is ignored or leaves the value at 60 seconds.",
+      "evidence_ids": ["E02"],
+      "required": true
+    },
+    {
+      "id": "R02",
+      "requirement": "Explain the pod-worker state update when the grace period is shortened.",
+      "claim": "UpdatePod stores the shortened value, updates the termination override, and calls cancelFn.",
+      "pass_condition": "Identifies status.gracePeriod, PodTerminationGracePeriodSecondsOverride, and cancelFn.",
+      "acceptable_alternatives": [],
+      "fail_condition": "Omits the state update or cancellation branch.",
+      "evidence_ids": ["E03"],
+      "required": true
+    },
+    {
+      "id": "R03",
+      "requirement": "Explain what happens to the already-running termination operation.",
+      "claim": "SyncTerminatingPod replaces the pod-worker context with context.TODO(), so cancellation does not propagate to the running termination operation.",
+      "pass_condition": "Explains the context replacement and its effect on cancellation.",
+      "acceptable_alternatives": [],
+      "fail_condition": "Claims cancelFn necessarily interrupts the already-running runtime termination.",
+      "evidence_ids": ["E04"],
+      "required": true
+    },
+    {
+      "id": "R04",
+      "requirement": "Trace the shortened grace period into the container runtime.",
+      "claim": "The shortened override flows through killPod to the runtime and StopContainer.",
+      "pass_condition": "Correctly traces the 10-second override into runtime termination.",
+      "acceptable_alternatives": [],
+      "fail_condition": "Claims the shortened value is discarded before reaching the runtime.",
+      "evidence_ids": ["E05", "E06"],
+      "required": true
+    },
+    {
+      "id": "R05",
+      "requirement": "Explain the role of terminatingAt and elapsed time.",
+      "claim": "terminatingAt records when termination began, but elapsed time is not subtracted from the new 10-second value.",
+      "pass_condition": "States that the new value is not calculated as 10 seconds minus elapsed time.",
+      "acceptable_alternatives": [],
+      "fail_condition": "Claims kubelet subtracts elapsed termination time from the new grace period.",
+      "evidence_ids": ["E01", "E02", "E06"],
+      "required": true
+    },
+    {
+      "id": "R06",
+      "requirement": "Give the complete control-flow explanation.",
+      "claim": "The flow is UpdatePod to calculateEffectiveGracePeriod to cancelFn to SyncTerminatingPod to killPod to the container runtime.",
+      "pass_condition": "Provides the end-to-end flow and distinguishes the pending update from the already-running operation.",
+      "acceptable_alternatives": [],
+      "fail_condition": "Provides only the final 10-second value without the relevant state and control-flow explanation.",
+      "evidence_ids": ["E02", "E03", "E04", "E05", "E06"],
+      "required": true
+    }
+  ]
+}

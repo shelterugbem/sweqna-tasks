@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "source": {
+    "rights_basis": "open-source",
+    "repository": "https://github.com/kubernetes/kubernetes",
+    "license": "Apache-2.0",
+    "ai_training_authorization": "",
+    "owner": null,
+    "permission_record": null
+  },
+  "third_party_material": []
+}

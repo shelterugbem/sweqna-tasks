@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "authoritative": false,
+  "agent": "gemini-cli",
+  "model": "gemini-3.8-flash",
+  "model_version": "EXACT version string the tool reports, not the marketing name",
+  "date": "YYYY-MM-DD",
+  "task_revision": 1,
+  "budget": "free tier, default limits",
+  "notes": "Anything that would stop someone reconciling your numbers with ours: rate limits hit, a retry, a workaround, an attempt you discarded and why.",
+  "attempts": [
+    {
+      "id": "A1",
+      "answer_text": "The full answer the agent produced. Not a summary, not your paraphrase.",
+      "criteria": [
+        {"id": "R01", "met": false, "note": "Why you scored it this way."}
+      ]
+    },
+    {
+      "id": "A2",
+      "answer_text": "",
+      "criteria": [{"id": "R01", "met": false, "note": ""}]
+    },
+    {
+      "id": "A3",
+      "answer_text": "",
+      "criteria": [{"id": "R01", "met": false, "note": ""}]
+    }
+  ]
+}

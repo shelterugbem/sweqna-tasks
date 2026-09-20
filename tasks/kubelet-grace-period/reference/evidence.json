@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "evidence": [
+    {
+      "id": "E01",
+      "claim": "A pod worker records the time termination begins and marks the pod as started terminating.",
+      "source": {
+        "path": "environment/src/pkg/kubelet/pod_workers.go",
+        "symbol": "podWorkers.completeSync",
+        "commit": "400031d69530e018d5c001a922d3c5d2afaba954",
+        "lines": "1415-1429"
+      },
+      "verification": "Inspected the pinned Kubernetes source at the cited path and line range; the cited statements were verified directly in the source.",
+      "result": {
+        "observed": "terminatingAt is set when zero, startedTerminating is set true, and the last pod update is requeued.",
+        "interpretation": "The termination start time is recorded once and is not reset by later kill requests.",
+        "log": null
+      }
+    },
+    {
+      "id": "E02",
+      "claim": "A shorter termination grace-period override is accepted and changes the effective grace period.",
+      "source": {
+        "path": "environment/src/pkg/kubelet/pod_workers.go",
+        "symbol": "calculateEffectiveGracePeriod",
+        "commit": "400031d69530e018d5c001a922d3c5d2afaba954",
+        "lines": "1007-1039"
+      },
+      "verification": "Inspected the pinned Kubernetes source at the cited path and line range; the cited statements were verified directly in the source.",
+      "result": {
+        "observed": "The function replaces the current grace period when the supplied override is smaller and returns true when the stored value changes.",
+        "interpretation": "A 10-second request can shorten an existing 60-second grace period to 10 seconds.",
+        "log": null
+      }
+    },
+    {
+      "id": "E03",
+      "claim": "A shortened grace period causes the pod worker to cancel the current pod sync.",
+      "source": {
+        "path": "environment/src/pkg/kubelet/pod_workers.go",
+        "symbol": "podWorkers.UpdatePod",
+        "commit": "400031d69530e018d5c001a922d3c5d2afaba954",
+        "lines": "933-939"
+      },
+      "verification": "Inspected the pinned Kubernetes source at the cited path and line range; the cited statements were verified directly in the source.",
+      "result": {
+        "observed": "UpdatePod stores the effective grace period, sets the KillPodOptions override, detects that the grace period was shortened, and calls status.cancelFn().",
+        "interpretation": "The new 10-second termination update causes the current pod sync to be cancelled/reprocessed.",
+        "log": null
+      }
+    },
+    {
+      "id": "E04",
+      "claim": "The current SyncTerminatingPod implementation replaces the pod-worker context with context.TODO().",
+      "source": {
+        "path": "environment/src/pkg/kubelet/kubelet.go",
+        "symbol": "Kubelet.SyncTerminatingPod",
+        "commit": "400031d69530e018d5c001a922d3c5d2afaba954",
+        "lines": "2335-2348"
+      },
+      "verification": "Inspected the pinned Kubernetes source at the cited path and line range; the cited statements were verified directly in the source.",
+      "result": {
+        "observed": "The incoming context is replaced with klog.NewContext(context.TODO(), logger). The source contains TODO #113606 concerning connecting the incoming context.",
+        "interpretation": "The pod-worker cancellation does not propagate through this replacement context to the currently running termination operation.",
+        "log": null
+      }
+    },
+    {
+      "id": "E05",
+      "claim": "The pod termination context and grace-period override are passed to the container runtime.",
+      "source": {
+        "path": "environment/src/pkg/kubelet/kubelet_pods.go",
+        "symbol": "Kubelet.killPod",
+        "commit": "400031d69530e018d5c001a922d3c5d2afaba954",
+        "lines": "1080-1092"
+      },
+      "verification": "Inspected the pinned Kubernetes source at the cited path and line range; the cited statements were verified directly in the source.",
+      "result": {
+        "observed": "killPod calls containerRuntime.KillPod(ctx, pod, p, gracePeriodOverride).",
+        "interpretation": "The effective grace-period override reaches the runtime termination path.",
+        "log": null
+      }
+    },
+    {
+      "id": "E06",
+      "claim": "The runtime applies the grace-period override directly to container termination and passes it to StopContainer.",
+      "source": {
+        "path": "environment/src/pkg/kubelet/kuberuntime/kuberuntime_container.go",
+        "symbol": "kubeGenericRuntimeManager.killContainer",
+        "commit": "400031d69530e018d5c001a922d3c5d2afaba954",
+        "lines": "864-920"
+      },
+      "verification": "Inspected the pinned Kubernetes source at the cited path and line range; the cited statements were verified directly in the source.",
+      "result": {
+        "observed": "killContainer assigns the override to gracePeriod and calls runtimeService.StopContainer with that value.",
+        "interpretation": "A subsequent termination operation receives the shortened 10-second override; the code does not subtract elapsed time from terminatingAt.",
+        "log": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "task_id": "kubelet-grace-period",
+  "revision": 1,
+  "task_type": "SWE_QA",
+  "verification_method": "RUBRIC",
+  "category": "Root-Cause Analysis",
+  "primary_languages": [
+    "Go"
+  ],
+  "repo_url": "https://github.com/kubernetes/kubernetes",
+  "repo_commit": "400031d69530e018d5c001a922d3c5d2afaba954",
+  "author": {
+    "name": "shelterugbem",
+    "github": "shelterugbem"
+  },
+  "ai_tools_used": [],
+  "status": "draft",
+  "environment": {
+    "mode": "container",
+    "base_image_digest": "sha256:ba5ef6614ca131b80a635fc6a7b715d9ee8a7f333debdbb81afb68259c7d48d4",
+    "architecture": "linux/amd64",
+    "cpus": 1,
+    "memory_mb": 2048,
+    "storage_mb": 4096,
+    "network_mode": "no-network",
+    "source_modifications": "Copied pkg/kubelet/ unchanged from Kubernetes commit 400031d69530e018d5c001a922d3c5d2afaba954 and added a focused grace-period reproduction at environment/src/grace_period.go."
+  }
+}
