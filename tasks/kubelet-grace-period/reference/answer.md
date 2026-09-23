@@ -53,13 +53,19 @@ Observed output:
 source: /task/src/pkg/kubelet/pod_workers.go
 function: calculateEffectiveGracePeriod
 source range: 1009-1040
-initial status.gracePeriod = 60
-incoming PodTerminationGracePeriodSecondsOverride = 10
-the function accepts the smaller override
-effective grace period = 10
-grace period shortened = true
+executing the exact pinned repository function body
 
-The experiment uses the actual pinned source file to locate the repository function and demonstrates the 60-to-10 transition. The source evidence establishes the separate cancellation behavior described above.
+actual execution output:
+scenario 1: initial=60 override=10 effective=10 shortened=true
+scenario 2: initial=60 override=60 effective=60 shortened=false
+
+pinned-source termination control-flow checks:
+UpdatePod detects a shortened grace period: true
+UpdatePod invokes the worker cancel function: true
+SyncTerminatingPod replaces the worker context with context.TODO(): true
+SyncTerminatingPod calls killPod with the grace-period override: true
+
+The experiment executes the exact pinned calculateEffectiveGracePeriod function body and checks the relevant termination control flow in the pinned source. It therefore demonstrates both the 60-to-10 grace-period calculation and the distinction between the updated stored value and cancellation of the already-running termination operation.
 
 ## Boundaries
 

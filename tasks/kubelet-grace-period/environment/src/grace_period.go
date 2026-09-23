@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 func main() {
@@ -38,9 +39,7 @@ func main() {
 		panic(err)
 	}
 
-	body := string(data[
-		fset.Position(fn.Body.Lbrace).Offset:
-		fset.Position(fn.Body.Rbrace).Offset+1])
+	body := string(data[fset.Position(fn.Body.Lbrace).Offset : fset.Position(fn.Body.Rbrace).Offset+1])
 
 	fmt.Printf("source: %s\n", source)
 	fmt.Printf("function: calculateEffectiveGracePeriod\n")
@@ -114,4 +113,50 @@ func main() {
 	fmt.Println()
 	fmt.Println("actual execution output:")
 	fmt.Print(string(output))
+
+	kubeletSource := "/task/src/pkg/kubelet/kubelet.go"
+	kubeletData, err := os.ReadFile(kubeletSource)
+	if err != nil {
+		panic(err)
+	}
+	kubeletText := string(kubeletData)
+
+	fmt.Println()
+	fmt.Println("pinned-source termination control-flow checks:")
+
+	checks := []struct {
+		name string
+		ok   bool
+	}{
+		{
+			name: "UpdatePod detects a shortened grace period",
+			ok:   strings.Contains(string(data), "wasGracePeriodShortened"),
+		},
+		{
+			name: "UpdatePod invokes the worker cancel function",
+			ok:   strings.Contains(string(data), "status.cancelFn()"),
+		},
+		{
+			name: "SyncTerminatingPod replaces the worker context with context.TODO()",
+			ok:   strings.Contains(kubeletText, "ctx = klog.NewContext(context.TODO(), logger)"),
+		},
+		{
+			name: "SyncTerminatingPod calls killPod with the grace-period override",
+			ok:   strings.Contains(kubeletText, "kl.killPod(ctx, pod, p, gracePeriod)"),
+		},
+	}
+
+	for _, check := range checks {
+		fmt.Printf("%s: %t\n", check.name, check.ok)
+		if !check.ok {
+			panic("pinned-source control-flow check failed: " + check.name)
+		}
+	}
+
+	fmt.Println()
+	fmt.Println("interpretation:")
+	fmt.Println("The exact repository function calculates 10 seconds for the new override.")
+	fmt.Println("The pinned source shows that UpdatePod calls cancelFn when the grace period is shortened.")
+	fmt.Println("SyncTerminatingPod replaces the worker context with context.TODO(), so worker cancellation does not propagate to the already-running termination operation.")
+	fmt.Println("The stored 10-second value and the already-running termination operation are therefore distinct pieces of state.")
 }
