@@ -36,7 +36,7 @@ The answer cites the relevant source locations for `UpdatePod`, `calculateEffect
 
 A prior no-repository probe was recorded in `PROPOSAL.md` on 2026-09-18 using Claude sonnet5. It was performed without repository access or attachments and produced a response based only on the task question. That response incorrectly treated pod-worker cancellation as necessarily cancelling the running termination operation.
 
-The final task question is retained in the proposal/task materials. A fresh no-repository probe should be recorded separately if the evaluation environment provides a model runner.
+The final task question is retained in the proposal/task materials. A fresh no-repository probe was recorded as attempt A4 in `calibration/self-check.json` on 2026-09-23 using GPT-5.6 and the final task question, with no repository files or attachments provided. The full response is retained in `answer_text` and is graded as a flawed-agent calibration example because it incorrectly claims elapsed-time subtraction and cancellation of the in-progress termination operation.
 
 ## Self-check disclosure
 
