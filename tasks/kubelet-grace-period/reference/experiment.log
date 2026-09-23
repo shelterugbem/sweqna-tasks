@@ -1,0 +1,46 @@
+$ docker build -t sweqa-kubelet-grace-period tasks/kubelet-grace-period/environment/
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 184B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/golang@sha256:ba5ef6614ca131b80a635fc6a7b715d9ee8a7f333debdbb81afb68259c7d48d4
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [internal] load build context
+#4 transferring context: 699B done
+#4 DONE 0.0s
+
+#5 [1/3] FROM docker.io/library/golang@sha256:ba5ef6614ca131b80a635fc6a7b715d9ee8a7f333debdbb81afb68259c7d48d4
+#5 resolve docker.io/library/golang@sha256:ba5ef6614ca131b80a635fc6a7b715d9ee8a7f333debdbb81afb68259c7d48d4 0.0s done
+#5 DONE 0.0s
+
+#6 [2/3] WORKDIR /task
+#6 CACHED
+
+#7 [3/3] COPY src/ /task/src/
+#7 CACHED
+
+#8 exporting to image
+#8 exporting layers done
+#8 exporting manifest sha256:c8d3a4001e24c68915f2b525fcecc62321204f175a54dec7031842cc73a10b46 done
+#8 exporting config sha256:928545799c9179a6fe2d24203a2a86e535b650b86c2b9d8dcc59d19d1518f940 done
+#8 exporting attestation manifest sha256:db0b467bcf1196d639f076e8f7678273715ef5abb0fabbca729c78c0e6852e7a done
+#8 exporting manifest list sha256:e2dc33b5d88a062e6009a32cb85c7cd3e7c0c5af6a02a6484639fa8b7c0ea217 done
+#8 naming to docker.io/library/sweqa-kubelet-grace-period:latest done
+#8 unpacking to docker.io/library/sweqa-kubelet-grace-period:latest done
+#8 DONE 0.1s
+$ docker run --rm --network none sweqa-kubelet-grace-period go run /task/src/grace_period.go
+source: /task/src/pkg/kubelet/pod_workers.go
+function: calculateEffectiveGracePeriod
+source range: 1009-1040
+executing the exact pinned repository function body
+
+actual execution output:
+scenario 1: initial=60 override=10 effective=10 shortened=true
+scenario 2: initial=60 override=60 effective=60 shortened=false

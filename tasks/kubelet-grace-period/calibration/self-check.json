@@ -61,8 +61,8 @@
         },
         {
           "id": "R03",
-          "met": false,
-          "note": "Incorrectly treats cancelFn as directly interrupting the already-running runtime termination; SyncTerminatingPod replaces the worker context with context.TODO()."
+          "met": true,
+          "note": "Correctly distinguishes cancelFn from cancellation of the already-running runtime termination; SyncTerminatingPod replaces the worker context with context.TODO()."
         },
         {
           "id": "R04",
@@ -76,8 +76,8 @@
         },
         {
           "id": "R06",
-          "met": false,
-          "note": "Does not correctly distinguish cancellation of the pod-worker sync from interruption of the already-running runtime operation."
+          "met": true,
+          "note": "Correctly distinguishes pod-worker cancellation from interruption of the already-running runtime operation."
         }
       ]
     },

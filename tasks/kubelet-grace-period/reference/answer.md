@@ -2,58 +2,73 @@
 
 ## Conclusion
 
-When a pod is already terminating with a 60-second grace period and a new kill request specifies 10 seconds, the pod worker shortens its effective grace period from 60 seconds to 10 seconds.
+When a pod is already terminating with a 60-second grace period and a new kill request specifies 10 seconds, kubelet accepts the smaller value: the pod worker effective grace period becomes 10 seconds.
 
-The new value is stored in `status.gracePeriod` and in the pending `KillPodOptions.PodTerminationGracePeriodSecondsOverride`. Because the grace period was shortened, the pod worker calls its cancellation function and reprocesses the pending termination update.
+The important distinction is between the stored termination state and the already-running termination operation. UpdatePod stores the shorter value in status.gracePeriod and in KillPodOptions.PodTerminationGracePeriodSecondsOverride, then calls status.cancelFn() because the grace period was shortened. However, SyncTerminatingPod replaces the incoming pod-worker context with context.TODO(). Therefore, cancellation of the pod-worker sync does not propagate to an already-running termination operation.
 
-However, the currently running termination operation is not interrupted through the pod-worker context in this implementation. `SyncTerminatingPod` currently replaces the incoming pod-worker context with `context.TODO()`. Therefore, an already-running `killPod`/container-runtime termination can continue using the original 60-second request. The later pending update uses the shortened 10-second override.
+If the original 60-second termination operation succeeds, the worker can complete termination and move toward cleanup without making another runtime termination call merely because the 10-second update arrived. If the operation instead returns context.Canceled or another error, the worker follows its error path and the pending update can be processed again.
 
-The elapsed time since `terminatingAt` is not subtracted from the new 10-second value in this path. The 10 seconds is therefore not calculated as "10 seconds minus time already elapsed."
+## Control flow
 
-## Mechanism
+1. podWorkers.completeSync records status.terminatingAt and sets status.startedTerminating.
+   Source: environment/src/pkg/kubelet/pod_workers.go, podWorkers.completeSync, lines 1415-1429.
 
-1. When termination begins, `completeSync` records `status.terminatingAt` and sets `status.startedTerminating = true`.
+2. podWorkers.UpdatePod processes the terminating pod and calls calculateEffectiveGracePeriod.
+   Source: environment/src/pkg/kubelet/pod_workers.go, podWorkers.UpdatePod, lines 820-939.
 
-2. While the pod is terminating, `UpdatePod` calls `calculateEffectiveGracePeriod`.
+3. calculateEffectiveGracePeriod starts from status.gracePeriod and only replaces it when an incoming override is smaller. With 60 stored and 10 supplied, it returns 10 and reports that the grace period was shortened.
+   Source: environment/src/pkg/kubelet/pod_workers.go, calculateEffectiveGracePeriod, lines 1007-1040.
 
-3. `calculateEffectiveGracePeriod` starts with the current `status.gracePeriod` and only accepts a new API-server or kubelet override when the new value is smaller. Thus a 10-second request changes an existing 60-second value to 10 seconds.
+4. UpdatePod stores the resulting value in status.gracePeriod and places the same value in KillPodOptions.PodTerminationGracePeriodSecondsOverride. Because the value was shortened, it calls status.cancelFn().
+   Source: environment/src/pkg/kubelet/pod_workers.go, podWorkers.UpdatePod, lines 930-1055.
 
-4. The function returns whether the existing grace period changed. Therefore the 60-to-10 transition makes `gracePeriodShortened` true.
+5. SyncTerminatingPod receives the pod-worker context but replaces it with a context based on context.TODO(). The source marks this with TODO #113606. Thus worker cancellation does not propagate into this running termination operation.
+   Source: environment/src/pkg/kubelet/kubelet.go, Kubelet.SyncTerminatingPod, lines 2335-2348.
 
-5. `UpdatePod` stores the resulting value in `status.gracePeriod` and puts the same value into `KillPodOptions.PodTerminationGracePeriodSecondsOverride`.
+6. The pod-worker termination path passes the pending grace-period override into SyncTerminatingPod, which passes it to killPod.
+   Source: environment/src/pkg/kubelet/pod_workers.go, podWorkers.podWorkerLoop, lines 1320-1360; environment/src/pkg/kubelet/kubelet.go, Kubelet.SyncTerminatingPod, lines 2377-2380.
 
-6. Because the grace period was shortened, `UpdatePod` calls `status.cancelFn()`.
+7. killPod passes the override to the container runtime. killContainer applies the override and passes the resulting value to StopContainer.
+   Sources: environment/src/pkg/kubelet/kubelet_pods.go, Kubelet.killPod, lines 1080-1092; environment/src/pkg/kubelet/kuberuntime/kuberuntime_manager.go, kubeGenericRuntimeManager.KillPod, lines 2103-2125; environment/src/pkg/kubelet/kuberuntime/kuberuntime_container.go, kubeGenericRuntimeManager.killContainer, lines 864-920.
 
-7. `SyncTerminatingPod` documents that it may be interrupted when the grace period is shortened. However, the implementation currently replaces the incoming pod-worker context with a new context based on `context.TODO()`. The source identifies this as TODO #113606.
+8. A successful terminating sync leads the pod worker to completeTerminating. The context.Canceled branch does not complete termination; it expects the pending update to be processed again.
+   Source: environment/src/pkg/kubelet/pod_workers.go, podWorkers.podWorkerLoop, lines 1450-1505.
 
-8. `SyncTerminatingPod` then calls `killPod` using this replacement context and the supplied grace-period override.
+## Elapsed time
 
-9. `killPod` passes both the context and grace-period override to the container runtime.
+terminatingAt records when termination began, but calculateEffectiveGracePeriod does not subtract elapsed time from a newly supplied 10-second override.
 
-10. `killContainer` applies the override directly and eventually passes the resulting grace period to `StopContainer`.
+Therefore this is not calculated as 10 seconds minus time already elapsed since terminatingAt. The new value is compared with the stored grace period and the smaller value is selected.
+
+Sources: environment/src/pkg/kubelet/pod_workers.go, podWorkers.completeSync, lines 1415-1429; calculateEffectiveGracePeriod, lines 1007-1040.
+
+## Experiment
+
+The focused experiment was run in the supplied Docker environment against the pinned source.
+
+Command:
+docker build -t sweqa-kubelet-grace-period tasks/kubelet-grace-period/environment/ >/dev/null && docker run --rm --network none sweqa-kubelet-grace-period go run /task/src/grace_period.go
+
+Observed output:
+source: /task/src/pkg/kubelet/pod_workers.go
+function: calculateEffectiveGracePeriod
+source range: 1009-1040
+initial status.gracePeriod = 60
+incoming PodTerminationGracePeriodSecondsOverride = 10
+the function accepts the smaller override
+effective grace period = 10
+grace period shortened = true
+
+The experiment uses the actual pinned source file to locate the repository function and demonstrates the 60-to-10 transition. The source evidence establishes the separate cancellation behavior described above.
 
 ## Boundaries
 
-The pod worker does shorten its recorded/effective grace period from 60 to 10 seconds and schedules the shortened termination update. However, the current `SyncTerminatingPod` implementation does not use the cancellable pod-worker context because it replaces it with `context.TODO()`.
+The inspected source establishes the kubelet-side state transition and control flow, but does not establish every final shutdown detail inside an external CRI implementation.
 
-The source examined does not show kubelet subtracting elapsed time from `terminatingAt` when calculating the new grace period. `terminatingAt` records when termination began, but the effective-grace-period calculation uses the current stored grace period and the new override.
+Within kubelet, killContainer can also reduce the grace period because a PreStop hook consumes time, termination ordering can consume time, and a minimum grace period is enforced before StopContainer is called.
 
-The exact timing and behavior after the 10-second update reaches the CRI runtime can depend on the runtime implementation and the state of the containers at that point.
+Source: environment/src/pkg/kubelet/kuberuntime/kuberuntime_container.go, kubeGenericRuntimeManager.killContainer, lines 864-920.
 
-## Verification
+## Summary
 
-The source-backed control flow is:
-
-`UpdatePod`
-→ `calculateEffectiveGracePeriod`
-→ 60 seconds becomes 10 seconds
-→ `wasGracePeriodShortened = true`
-→ `status.cancelFn()`
-→ pending termination update is processed
-→ `SyncTerminatingPod`
-→ `killPod`
-→ container runtime
-→ `killContainer`
-→ `StopContainer(..., gracePeriod)`.
-
-The source also shows that `terminatingAt` is set when termination begins but is not used by `calculateEffectiveGracePeriod` to subtract elapsed time. Therefore the new 10-second request is an effective grace-period value for subsequent termination processing, rather than a calculation of remaining time from the original 60-second deadline.
+60s stored -> new 10s request -> calculateEffectiveGracePeriod returns 10s -> status.gracePeriod becomes 10s -> cancelFn is invoked -> SyncTerminatingPod uses a replacement context.TODO() -> the already-running termination operation is not interrupted by that worker cancellation -> if the original operation succeeds, the worker can complete termination without another runtime termination call solely because of the new request.

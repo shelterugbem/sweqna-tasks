@@ -171,35 +171,35 @@
         {
           "id": "R01",
           "met": true,
-          "note": "Correctly identifies the 60-to-10 reduction."
+          "note": "The flawed answer correctly identifies the 60-to-10 reduction."
         },
         {
           "id": "R02",
           "met": true,
-          "note": "Correctly identifies the state update and cancelFn branch."
+          "note": "The flawed answer correctly identifies the state update and cancelFn branch."
         },
         {
           "id": "R03",
           "met": false,
-          "note": "Incorrectly claims cancelFn interrupts the already-running runtime operation."
+          "note": "The flawed answer incorrectly claims that cancelFn interrupts the already-running runtime operation; the pinned SyncTerminatingPod path replaces the worker context with context.TODO()."
         },
         {
           "id": "R04",
           "met": true,
-          "note": "Correctly identifies the shortened value reaching later termination processing."
+          "note": "The flawed answer correctly identifies the shortened value reaching later termination processing."
         },
         {
           "id": "R05",
           "met": true,
-          "note": "Correctly states that elapsed time is not subtracted from the new value."
+          "note": "The flawed answer correctly states that elapsed time is not subtracted from the new value."
         },
         {
           "id": "R06",
           "met": false,
-          "note": "Fails to distinguish pod-worker cancellation from cancellation of the already-running runtime operation."
+          "note": "The flawed answer fails to distinguish pod-worker cancellation from interruption of the already-running runtime operation."
         }
       ],
-      "explanation": "Real flawed agent answer supplied during calibration; its key error is treating pod-worker cancelFn as directly cancelling the already-running runtime termination."
+      "explanation": "G05 is intentionally a flawed-agent example. Its expected outcome is fail because the answer being graded incorrectly says that cancelFn cancels the already-running runtime termination. The explanation itself correctly identifies that context.TODO() prevents that cancellation from propagating."
     }
   ]
 }

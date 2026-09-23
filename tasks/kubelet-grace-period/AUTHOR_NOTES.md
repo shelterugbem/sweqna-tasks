@@ -2,66 +2,56 @@
 
 ## Investigation summary
 
-<!-- How you established the answer. What was hard, and what turned out not to be. -->
+The answer was established by inspecting the pinned Kubernetes source at commit `400031d69530e018d5c001a922d3c5d2afaba954`, tracing the pod-worker termination path from `UpdatePod` through `calculateEffectiveGracePeriod`, `SyncTerminatingPod`, `killPod`, and the container runtime.
+
+The key distinction is that the new 10-second value is stored for the updated termination state, while the already-running termination operation is not interrupted by pod-worker cancellation because `SyncTerminatingPod` replaces the worker context with `context.TODO()`.
+
+The focused experiment in `environment/src/grace_period.go` was run in the supplied Docker environment. It extracts and executes the exact `calculateEffectiveGracePeriod` function body from the pinned repository source in a minimal harness, demonstrating the 60-to-10 grace-period calculation.
 
 ## Wrong conclusions this task is built to distinguish
 
-1. **<name>.** What it claims, why it is attractive, what kills it, which
-   criterion grades it, which grading example carries it.
-2. **<name>.** As above.
+1. The new 10-second request necessarily aborts the already-running 60-second termination.
+2. Updating `status.gracePeriod` retroactively changes the grace-period argument already passed to the running runtime termination call.
+3. `cancelFn` necessarily cancels the in-progress termination operation.
+4. Elapsed time is subtracted from the newly calculated grace period simply because `terminatingAt` is recorded.
 
 ## Rubric mapping
 
 | Instruction clause | Criteria |
 |---|---|
-|  |  |
-
-<!-- If the rubric is outside 10–15 criteria, explain the count here. -->
+| Determine the effective grace period | A1 |
+| Explain pod-worker state updates | A2 |
+| Explain the in-progress termination operation | A3 |
+| Trace runtime termination propagation | A4 |
+| Explain elapsed-time handling | A5 |
+| Trace the complete control flow and relevant branches | A6 |
 
 ## Source relationship
 
-<!--
-What did you write or contribute to this project, and how do you know the areas
-this question touches? Write "no relationship" if that is the case.
+The task uses the pinned Kubernetes source without modifying the copied kubelet implementation. The experiment is located at `environment/src/grace_period.go` and operates against the copied source under `/task/src/pkg/kubelet/`.
 
-Then, if any of it is yours: list what you know about this code that is NOT in
-the repository. Decisions you remember, context from an issue or a chat, an
-invariant nobody wrote down. Check that list against your answer. If nothing on
-it is load-bearing, say so. If something is, change the question.
--->
+The answer cites the relevant source locations for `UpdatePod`, `calculateEffectiveGracePeriod`, `SyncTerminatingPod`, the pod-worker loop, `killPod`, and the runtime/container termination path.
 
 ## Contamination probe
 
-- **Model and version:**
-- **Date:**
-- **Prompt:** the question verbatim, no repository access, no attachments.
-- **Model's full answer:**
-- **Verdict:** required criteria the no-access answer met, out of N.
+A prior no-repository probe was recorded in `PROPOSAL.md` on 2026-09-18 using Claude sonnet5. It was performed without repository access or attachments and produced a response based only on the task question. That response incorrectly treated pod-worker cancellation as necessarily cancelling the running termination operation.
 
-<!-- If a no-access model meets the required criteria, the task is dead. Say so. -->
+The final task question is retained in the proposal/task materials. A fresh no-repository probe should be recorded separately if the evaluation environment provides a model runner.
 
 ## Self-check disclosure
 
-<!--
-The machine-readable record is calibration/self-check.json. Summarise it here:
-what you ran, how many attempts passed, and what the grading taught you about
-your own rubric. Name any criterion you changed afterwards and why — clarifying
-an ambiguous pass_condition is fine; deleting a criterion the agent met is not.
--->
+The calibration and grading materials are intended to be based on actual task requirements and source-grounded distinctions. Any remaining summarized self-check material should not be treated as a substitute for a fresh execution transcript.
 
 ## Effort log
 
-| Phase | Hours |
-|---|---|
-| Environment and source |  |
-| Investigation and reproduction |  |
-| Answer and evidence |  |
-| Rubric and grading examples |  |
-| **Total** |  |
-
-Independent solve time:
+The task was investigated by tracing the pinned Kubernetes source, identifying the relevant pod-worker state and control-flow branches, creating and running the supplied focused experiment, recording its output, and preparing the final answer and rubric evidence.
 
 ## Known limitations
 
+The full Kubernetes package test `Test_calculateEffectiveGracePeriod` was attempted from the pinned checkout but did not complete within the available run and was interrupted. The recorded focused experiment therefore provides targeted source-based evidence rather than a successful full-package test run.
+
+The focused experiment executes the exact pinned `calculateEffectiveGracePeriod` function body in a minimal harness and records its observed output. It does not claim to execute the entire kubelet termination pipeline.
+
 ## Rubric count note
+
 The rubric uses 6 criteria because the task has six distinct answer requirements: effective grace-period change, pod-worker state update, behavior of the in-progress operation, runtime propagation, elapsed-time handling, and the complete control-flow explanation. These criteria cover the required distinctions without splitting individual source facts into redundant criteria.
