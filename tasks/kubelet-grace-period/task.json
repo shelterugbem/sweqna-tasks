@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "task_id": "kubelet-grace-period",
-  "revision": 1,
+  "revision": 2,
   "task_type": "SWE_QA",
   "verification_method": "RUBRIC",
   "category": "Root-Cause Analysis",

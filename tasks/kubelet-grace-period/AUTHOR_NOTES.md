@@ -19,12 +19,12 @@ The focused experiment in `environment/src/grace_period.go` was run in the suppl
 
 | Instruction clause | Criteria |
 |---|---|
-| Determine the effective grace period | A1 |
-| Explain pod-worker state updates | A2 |
-| Explain the in-progress termination operation | A3 |
-| Trace runtime termination propagation | A4 |
-| Explain elapsed-time handling | A5 |
-| Trace the complete control flow and relevant branches | A6 |
+| Determine the effective grace period | R01 |
+| Explain pod-worker state updates | R02 |
+| Explain the in-progress termination operation | R03 |
+| Trace runtime termination propagation | R04 |
+| Explain elapsed-time handling | R05 |
+| Trace the complete control flow and relevant branches | R06 |
 
 ## Source relationship
 

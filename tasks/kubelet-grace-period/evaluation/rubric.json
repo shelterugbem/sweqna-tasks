@@ -33,11 +33,11 @@
     },
     {
       "id": "R04",
-      "requirement": "Trace the shortened grace period into the container runtime.",
-      "claim": "The shortened override flows through killPod to the runtime and StopContainer.",
-      "pass_condition": "Correctly traces the 10-second override into runtime termination.",
+      "requirement": "Distinguish the stored 10-second grace value from the already-running runtime termination operation and trace the successful completion path.",
+      "claim": "The stored grace value can become 10, but the already-running termination operation retains its original 60-second runtime argument; after successful termination, cleanup proceeds without another runtime termination call.",
+      "pass_condition": "Correctly distinguishes the stored 10-second value from the in-progress 60-second runtime operation, explains successful completion and cleanup without another runtime termination call, and does not conflate this with an error/retry path.",
       "acceptable_alternatives": [],
-      "fail_condition": "Claims the shortened value is discarded before reaching the runtime.",
+      "fail_condition": "Claims that the already-running 60-second runtime termination is changed in place to 10 seconds, or that successful completion necessarily causes another runtime termination call.",
       "evidence_ids": ["E05", "E06"],
       "required": true
     },

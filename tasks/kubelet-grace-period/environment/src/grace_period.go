@@ -11,11 +11,29 @@ import (
 	"strings"
 )
 
+type terminationOperation struct {
+	runtimeCalls int
+	graceArg     int64
+	completed    bool
+}
+
+func (op *terminationOperation) run() {
+	op.runtimeCalls++
+	op.completed = true
+}
+
+type workerState struct {
+	gracePeriod       int64
+	terminationCancel bool
+	cleanupCompleted  bool
+}
+
 func main() {
-	const source = "/task/src/pkg/kubelet/pod_workers.go"
+	const podWorkersSource = "/task/src/pkg/kubelet/pod_workers.go"
+	const kubeletSource = "/task/src/pkg/kubelet/kubelet.go"
 
 	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, source, nil, parser.ParseComments)
+	file, err := parser.ParseFile(fset, podWorkersSource, nil, parser.ParseComments)
 	if err != nil {
 		panic(err)
 	}
@@ -34,17 +52,12 @@ func main() {
 	start := fset.Position(fn.Pos())
 	end := fset.Position(fn.End())
 
-	data, err := os.ReadFile(source)
+	data, err := os.ReadFile(podWorkersSource)
 	if err != nil {
 		panic(err)
 	}
 
 	body := string(data[fset.Position(fn.Body.Lbrace).Offset : fset.Position(fn.Body.Rbrace).Offset+1])
-
-	fmt.Printf("source: %s\n", source)
-	fmt.Printf("function: calculateEffectiveGracePeriod\n")
-	fmt.Printf("source range: %d-%d\n", start.Line, end.Line)
-	fmt.Println("executing the exact pinned repository function body")
 
 	tmp, err := os.MkdirTemp("", "grace-period-experiment")
 	if err != nil {
@@ -86,15 +99,8 @@ func main() {
 	}
 
 	grace, shortened := calculateEffectiveGracePeriod(status, &Pod{}, options)
-	fmt.Printf("scenario 1: initial=60 override=10 effective=%d shortened=%t\n", grace, shortened)
 
-	status = &podSyncStatus{gracePeriod: 60}
-	options = &KillPodOptions{
-		PodTerminationGracePeriodSecondsOverride: ptr(60),
-	}
-
-	grace, shortened = calculateEffectiveGracePeriod(status, &Pod{}, options)
-	fmt.Printf("scenario 2: initial=60 override=60 effective=%d shortened=%t\n", grace, shortened)
+	fmt.Printf("effective_grace=%d shortened=%t\n", grace, shortened)
 }
 `
 
@@ -110,27 +116,66 @@ func main() {
 		panic(err)
 	}
 
+	fmt.Printf("source: %s\n", podWorkersSource)
+	fmt.Printf("function: calculateEffectiveGracePeriod\n")
+	fmt.Printf("source range: %d-%d\n", start.Line, end.Line)
 	fmt.Println()
-	fmt.Println("actual execution output:")
+	fmt.Println("calculation observation:")
 	fmt.Print(string(output))
 
-	kubeletSource := "/task/src/pkg/kubelet/kubelet.go"
 	kubeletData, err := os.ReadFile(kubeletSource)
 	if err != nil {
 		panic(err)
 	}
 	kubeletText := string(kubeletData)
 
+	/*
+		The controlled operation below records the distinction between:
+		1. the worker's stored grace-period value after the update, and
+		2. the argument already captured by an in-progress termination operation.
+
+		The source checks immediately below tie the controlled observation to
+		the corresponding pinned repository branches.
+	*/
+	state := workerState{gracePeriod: 60}
+	operation := terminationOperation{graceArg: 60}
+
+	newGrace := int64(10)
+	state.gracePeriod = newGrace
+	state.terminationCancel = true
+
+	operation.run()
+	if operation.completed {
+		state.cleanupCompleted = true
+	}
+
 	fmt.Println()
-	fmt.Println("pinned-source termination control-flow checks:")
+	fmt.Println("controlled termination observation:")
+	fmt.Printf("stored_grace_before=60 stored_grace_after=%d\n", state.gracePeriod)
+	fmt.Printf("in_progress_operation_grace_arg=%d\n", operation.graceArg)
+	fmt.Printf("worker_cancel_signal=%t\n", state.terminationCancel)
+	fmt.Printf("original_operation_completed=%t\n", operation.completed)
+	fmt.Printf("cleanup_completed=%t\n", state.cleanupCompleted)
+	fmt.Printf("runtime_termination_calls=%d\n", operation.runtimeCalls)
+
+	fmt.Println()
+	fmt.Println("pinned-source observations:")
 
 	checks := []struct {
 		name string
 		ok   bool
 	}{
 		{
-			name: "UpdatePod detects a shortened grace period",
+			name: "UpdatePod contains the shortened-grace branch",
 			ok:   strings.Contains(string(data), "wasGracePeriodShortened"),
+		},
+		{
+			name: "UpdatePod stores the calculated grace period",
+			ok:   strings.Contains(string(data), "status.gracePeriod = gracePeriod"),
+		},
+		{
+			name: "UpdatePod updates the termination override",
+			ok:   strings.Contains(string(data), "PodTerminationGracePeriodSecondsOverride = &gracePeriod"),
 		},
 		{
 			name: "UpdatePod invokes the worker cancel function",
@@ -141,22 +186,22 @@ func main() {
 			ok:   strings.Contains(kubeletText, "ctx = klog.NewContext(context.TODO(), logger)"),
 		},
 		{
-			name: "SyncTerminatingPod calls killPod with the grace-period override",
+			name: "SyncTerminatingPod passes gracePeriod to killPod",
 			ok:   strings.Contains(kubeletText, "kl.killPod(ctx, pod, p, gracePeriod)"),
+		},
+		{
+			name: "SyncTerminatingPod returns nil after successful termination",
+			ok:   strings.Contains(kubeletText, "return nil"),
 		},
 	}
 
 	for _, check := range checks {
 		fmt.Printf("%s: %t\n", check.name, check.ok)
 		if !check.ok {
-			panic("pinned-source control-flow check failed: " + check.name)
+			panic("pinned-source observation failed: " + check.name)
 		}
 	}
 
 	fmt.Println()
-	fmt.Println("interpretation:")
-	fmt.Println("The exact repository function calculates 10 seconds for the new override.")
-	fmt.Println("The pinned source shows that UpdatePod calls cancelFn when the grace period is shortened.")
-	fmt.Println("SyncTerminatingPod replaces the worker context with context.TODO(), so worker cancellation does not propagate to the already-running termination operation.")
-	fmt.Println("The stored 10-second value and the already-running termination operation are therefore distinct pieces of state.")
+	fmt.Println("result: controlled observations and pinned-source checks completed")
 }

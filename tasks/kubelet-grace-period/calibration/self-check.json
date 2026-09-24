@@ -5,7 +5,7 @@
   "model": "GPT-5.6",
   "model_version": "GPT-5.6",
   "date": "2026-09-23",
-  "task_revision": 1,
+  "task_revision": 2,
   "budget": "user-provided external AI answers",
   "notes": "Four AI answers were used for calibration. A4 is a fresh no-repository run using the final task question; no repository files or attachments were provided.",
   "attempts": [
