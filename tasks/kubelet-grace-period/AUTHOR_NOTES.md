@@ -38,6 +38,8 @@ A prior no-repository probe was recorded in `PROPOSAL.md` on 2026-09-18 using Cl
 
 The final task question is retained in the proposal/task materials. A fresh no-repository probe was recorded as attempt A4 in `calibration/self-check.json` on 2026-09-23 using GPT-5.6 and the final task question, with no repository files or attachments provided. The full response is retained in `answer_text` and is graded as a flawed-agent calibration example because it incorrectly claims elapsed-time subtraction and cancellation of the in-progress termination operation.
 
+A5 records a full Claude response supplied by the author on 2026-09-23. The response is retained verbatim and graded as a flawed-agent calibration example: it correctly identifies the 60-to-10 stored grace-period change and unchanged `terminatingAt`, but incorrectly claims elapsed-time subtraction and that `cancelFn` cancels the already-running runtime termination. Repository access for that run was not independently recorded.
+
 ## Self-check disclosure
 
 The calibration and grading materials are intended to be based on actual task requirements and source-grounded distinctions. Any remaining summarized self-check material should not be treated as a substitute for a fresh execution transcript.
